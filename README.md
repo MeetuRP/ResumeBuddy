@@ -52,6 +52,14 @@ ResumeBuddy parses your resume with smart extraction algorithms, auto-builds a p
 - **Grid layout** — Responsive card-based design with hover effects
 - **Quick actions** — Upload new resumes or evaluate existing ones in one click
 
+### 📊 Admin Analytics Dashboard
+- **Premium HUD** — Vibrant gradient-based dashboard for real-time monitoring of Users, Resumes, Evaluations, Logins, and Visits.
+- **Traffic Tracking** — Automated site visit logging with IP and User Agent capture.
+- **Authentication Logs** — Detailed login history tracking for security auditing.
+- **Dynamic Filtering** — Global time-based filtering (Today, Last 7 Days, Last 30 Days) for all performance metrics.
+- **Activity Timeline** — 30-day interactive charts for tracking engagement trends across all event types.
+- **Distribution Reports** — Visual breakdown of ATS scores, skills, and industry/role distribution among the user base.
+
 ---
 
 ## 🏗️ Architecture
@@ -68,7 +76,9 @@ resume_analyzer/
 │   │   ├── routes/
 │   │   │   ├── auth.py         # Google OAuth + JWT + profile CRUD
 │   │   │   ├── resume.py       # Upload, parse, auto-sync profile
-│   │   │   └── analysis.py     # ATS scoring + skill matching
+│   │   │   ├── analysis.py     # ATS scoring + skill matching
+│   │   │   ├── admin.py        # Admin stats, user mgmt, event logs
+│   │   │   └── events.py       # Public event tracking (visits)
 │   │   └── services/
 │   │       └── parser.py       # Smart resume parser engine
 │   ├── requirements.txt
@@ -203,6 +213,11 @@ Navigate to **http://localhost:5173** → Sign in with Google → Upload your re
 | `GET` | `/api/resume/me` | List user's resumes |
 | `POST` | `/api/analysis/evaluate` | Run ATS scoring against JD |
 | `GET` | `/api/analysis/history` | Get analysis history |
+| `POST` | `/api/events/visit` | Log an anonymous site visit |
+| `GET` | `/api/admin/stats` | Get overview stats (with period filter) |
+| `GET` | `/api/admin/visitors` | Get detailed site traffic log |
+| `GET` | `/api/admin/logins` | Get detailed user login history |
+| `GET` | `/api/admin/activity` | Get 30-day activity timeline |
 
 > 📖 Interactive API docs available at **http://localhost:8000/docs** (Swagger UI)
 
@@ -239,12 +254,10 @@ PDF → Text Extraction (pdfplumber)
 - [x] ATS scoring engine (rule-based)
 - [x] Resume re-upload with auto-sync
 - [x] Suggested roles from skills
+- [x] Analytics dashboard with performance trends
+- [x] Visitor and login tracking system
 - [ ] LLM-powered semantic analysis (OpenAI / Gemini)
 - [ ] AI-generated resume improvement suggestions
-- [ ] Multi-resume comparison
-- [ ] Job board integration
-- [ ] Resume template generator
-- [ ] Analytics dashboard with score trends
 
 ---
 

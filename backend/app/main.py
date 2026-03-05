@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from .database import connect_to_mongo, close_mongo_connection
 from .config import settings
-from .routes import auth, resume, analysis
+from .routes import auth, resume, analysis, admin, events
 
 app = FastAPI(title="ResumeBuddy AI API")
 
@@ -30,6 +30,8 @@ async def shutdown_db_client():
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(resume.router, prefix="/api/resume", tags=["Resume"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(events.router, prefix="/api/events", tags=["Events"])
 
 @app.get("/")
 async def root():

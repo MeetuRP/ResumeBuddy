@@ -46,6 +46,10 @@ async def upload_resume(
 
     result = await db.resumes.insert_one(resume.model_dump(by_alias=True, exclude={"id"}))
 
+    # Log upload event for admin analytics
+    from ..services.events import log_event
+    await log_event("resume_upload", user_id=str(current_user.id))
+
     # ============================================================
     # AUTO-SYNC: Populate user profile from parsed resume data
     # ============================================================

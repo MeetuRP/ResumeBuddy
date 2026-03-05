@@ -79,6 +79,10 @@ async def evaluate_resume(
     )
     
     result = await db.analysis_results.insert_one(analysis.model_dump(by_alias=True, exclude={"id"}))
+
+    # Log score check event for admin analytics
+    from ..services.events import log_event
+    await log_event("score_check", user_id=str(current_user.id), metadata={"job_title": job_title, "ats_score": ats_score})
     
     # Return a plain dict with string 'id' for frontend
     return {

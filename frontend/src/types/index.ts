@@ -71,6 +71,7 @@ export interface User {
     email: string;
     profile_image?: string;
     bio?: string;
+    is_admin?: boolean;
     social_links: SocialLinks;
     job_preferences: JobPreferences;
     last_parsed_profile?: ExtractedData;

@@ -5,7 +5,7 @@ import Navbar from "../components/Navbar";
 import type { User } from "../types";
 
 const Profile = () => {
-    const { user, token } = useAuthStore();
+    const { user } = useAuthStore();
     const [profile, setProfile] = useState<User | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState("");

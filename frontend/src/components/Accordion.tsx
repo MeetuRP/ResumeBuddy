@@ -26,7 +26,7 @@ export const Accordion = ({ children, defaultOpen, allowMultiple = false }: any)
     );
 };
 
-export const AccordionItem = ({ id, children }: any) => (
+export const AccordionItem = ({ children }: any) => (
     <div className="overflow-hidden border-b border-gray-200">{children}</div>
 );
 

@@ -50,6 +50,7 @@ class UserModel(BaseModel):
     email: EmailStr
     profile_image: Optional[str] = None
     bio: Optional[str] = None
+    is_admin: bool = False
     social_links: SocialLinks = Field(default_factory=SocialLinks)
     job_preferences: JobPreferences = Field(default_factory=JobPreferences)
     last_parsed_profile: Optional[ExtractedData] = None

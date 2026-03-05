@@ -62,8 +62,12 @@ async def google_callback(request: Request):
         user = await db.users.find_one({"google_id": user_info['sub']})
 
     access_token = create_access_token(data={"sub": str(user["_id"]), "email": user["email"]})
+
+    # Log login event for admin analytics
+    from ..services.events import log_event
+    await log_event("login", user_id=str(user["_id"]), metadata={"email": user["email"]})
     
-    # Redirect to frontend with token (simplest for now, can use cookies or query params)
+    # Redirect to frontend with token
     redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
     return RedirectResponse(url=redirect_url)
 

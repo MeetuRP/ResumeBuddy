@@ -8,6 +8,8 @@ import Upload from './routes/upload';
 import Evaluate from './routes/evaluate';
 import Results from './routes/results';
 import Profile from './routes/profile';
+import AdminDashboard from './routes/admin/dashboard';
+import api from './lib/api';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -23,6 +25,8 @@ function App() {
 
   useEffect(() => {
     checkAuth();
+    // Log site visit
+    api.post('/events/visit').catch(() => { });
   }, [checkAuth]);
 
   return (
@@ -35,6 +39,7 @@ function App() {
         <Route path="/evaluate" element={<ProtectedRoute><Evaluate /></ProtectedRoute>} />
         <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
         <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
