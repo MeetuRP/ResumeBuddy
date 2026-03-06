@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from typing import List
 import os
 import shutil
@@ -54,7 +55,8 @@ async def upload_resume(
     # AUTO-SYNC: Populate user profile from parsed resume data
     # ============================================================
     update_fields: dict = {
-        "last_parsed_profile": extracted_data.model_dump()
+        "last_parsed_profile": extracted_data.model_dump(),
+        "resume_id": str(result.inserted_id)
     }
 
     # Auto-fill social_links from extracted URLs
@@ -96,3 +98,45 @@ async def get_my_resumes(current_user: UserModel = Depends(get_current_user)):
         r['id'] = str(r['_id'])
         del r['_id']
     return resumes
+
+
+@router.get("/view/{resume_id}")
+async def view_resume(resume_id: str, current_user: UserModel = Depends(get_current_user)):
+    db = get_db()
+    resume = await db.resumes.find_one({
+        "_id": ObjectId(resume_id),
+        "user_id": str(current_user.id)
+    })
+    
+    if not resume:
+        # Check if user is admin (admin can view any resume)
+        if current_user.is_admin:
+            resume = await db.resumes.find_one({"_id": ObjectId(resume_id)})
+            
+        if not resume:
+            # SELF-HEALING: If specific resume_id is missing, fallback to latest
+            resume = await db.resumes.find_one(
+                {"user_id": str(current_user.id)},
+                sort=[("uploaded_at", -1)]
+            )
+            
+            if not resume:
+                raise HTTPException(status_code=404, detail="Resume not found")
+
+    file_path = resume.get("file_path")
+    if not os.path.exists(file_path):
+        # If specific file is missing, try fallback one more time for safety
+        latest_resume = await db.resumes.find_one(
+            {"user_id": str(current_user.id)},
+            sort=[("uploaded_at", -1)]
+        )
+        if latest_resume and os.path.exists(latest_resume.get("file_path")):
+            file_path = latest_resume.get("file_path")
+        else:
+            raise HTTPException(status_code=404, detail="File not found on server")
+
+    return FileResponse(
+        file_path, 
+        media_type="application/pdf",
+        filename=os.path.basename(file_path)
+    )

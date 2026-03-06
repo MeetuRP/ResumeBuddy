@@ -89,7 +89,23 @@ def normalize_user(user_data):
 
 @router.get("/me")
 async def get_me(current_user: UserModel = Depends(get_current_user)):
-    return normalize_user(current_user)
+    user_dict = normalize_user(current_user)
+    
+    # Fallsback: if resume_id is missing, try to find the latest uploaded resume
+    if not user_dict.get("resume_id"):
+        db = get_db()
+        from bson import ObjectId
+        latest_resume = await db.resumes.find_one(
+            {"user_id": user_dict["id"]},
+            sort=[("uploaded_at", -1)]
+        )
+        if latest_resume:
+            rid = str(latest_resume["_id"])
+            user_dict["resume_id"] = rid
+            # Update user doc to avoid repeat lookups
+            await db.users.update_one({"_id": ObjectId(user_dict["id"])}, {"$set": {"resume_id": rid}})
+            
+    return user_dict
 
 @router.put("/me")
 async def update_profile(

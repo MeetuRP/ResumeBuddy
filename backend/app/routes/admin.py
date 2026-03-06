@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from ..middleware import require_admin
-from ..models import UserModel
+from ..models import UserModel, AdminUserUpdate
 from ..database import get_db
+from bson import ObjectId
 from datetime import datetime, timedelta
 
 router = APIRouter()
@@ -72,6 +73,10 @@ async def get_all_users(admin: UserModel = Depends(require_admin)):
             "is_admin": u.get("is_admin", False),
             "resume_count": resume_count,
             "evaluation_count": eval_count,
+            "bio": u.get("bio"),
+            "social_links": u.get("social_links", {}),
+            "job_preferences": u.get("job_preferences", {}),
+            "last_parsed_profile": u.get("last_parsed_profile"),
             "created_at": u.get("created_at", "").isoformat() if u.get("created_at") else None,
         })
 
@@ -130,6 +135,9 @@ async def get_all_evaluations(admin: UserModel = Depends(require_admin)):
             "ats_score": e.get("ats_score", 0),
             "skills_matched": len(e.get("skills_matched", [])),
             "missing_skills": len(e.get("missing_skills", [])),
+            "missing_skills_list": e.get("missing_skills", []),
+            "skills_matched_list": e.get("skills_matched", []),
+            "suggestions": e.get("suggestions", []),
             "created_at": e.get("created_at", "").isoformat() if e.get("created_at") else None,
         })
 
@@ -288,3 +296,44 @@ async def get_logins_report(admin: UserModel = Depends(require_admin)):
         })
 
     return result
+
+
+@router.patch("/users/{user_id}")
+async def update_user(user_id: str, update_data: AdminUserUpdate, admin: UserModel = Depends(require_admin)):
+    """Update user core details and admin status."""
+    db = get_db()
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    
+    if not update_dict:
+        return {"message": "No fields to update"}
+        
+    try:
+        oid = ObjectId(user_id)
+        result = await db.users.update_one({"_id": oid}, {"$set": update_dict})
+        if result.matched_count == 0:
+            return {"error": "User not found"}
+        return {"message": "User updated successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str, admin: UserModel = Depends(require_admin)):
+    """Delete user and all their associated data."""
+    db = get_db()
+    try:
+        oid = ObjectId(user_id)
+        
+        # 1. Delete user record
+        user_result = await db.users.delete_one({"_id": oid})
+        if user_result.deleted_count == 0:
+            return {"error": "User not found"}
+            
+        # 2. Delete associated data
+        # user_id is stored as string in resumes/evaluations
+        await db.resumes.delete_many({"user_id": user_id})
+        await db.analysis_results.delete_many({"user_id": user_id})
+        
+        return {"message": "User and all associated data deleted"}
+    except Exception as e:
+        return {"error": str(e)}

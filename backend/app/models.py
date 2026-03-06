@@ -54,6 +54,7 @@ class UserModel(BaseModel):
     social_links: SocialLinks = Field(default_factory=SocialLinks)
     job_preferences: JobPreferences = Field(default_factory=JobPreferences)
     last_parsed_profile: Optional[ExtractedData] = None
+    resume_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class UserProfileUpdate(BaseModel):
@@ -61,6 +62,11 @@ class UserProfileUpdate(BaseModel):
     bio: Optional[str] = None
     social_links: Optional[SocialLinks] = None
     job_preferences: Optional[JobPreferences] = None
+
+class AdminUserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    is_admin: Optional[bool] = None
 
 class ResumeModel(BaseModel):
     model_config = ConfigDict(

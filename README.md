@@ -2,7 +2,7 @@
 
 # 🚀 ResumeBuddy
 
-### AI-Powered Resume Intelligence Platform
+### The Futuristic Resume Intelligence Platform
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -11,9 +11,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 
-**Upload your resume once. Get intelligent insights forever.**
+**Upload once. Get premium insights forever.**
 
-ResumeBuddy parses your resume with smart extraction algorithms, auto-builds a professional profile, matches you against job descriptions with ATS scoring, and suggests the best-fit roles — all without needing an LLM API key.
+ResumeBuddy is a state-of-the-art platform that transforms static PDFs into dynamic intelligence. Features a **premium glassmorphic UI**, **animated scoring engines**, and **futuristic feedback categories** (Tone, Content, Structure) — all self-contained with smart extraction algorithms.
 
 [Getting Started](#-getting-started) · [Features](#-features) · [Architecture](#-architecture) · [Tech Stack](#%EF%B8%8F-tech-stack)
 
@@ -30,35 +30,31 @@ ResumeBuddy parses your resume with smart extraction algorithms, auto-builds a p
 - **Skill recognition** — Matches against an 80+ curated tech skill database covering AI/ML, web dev, cloud, DevOps, mobile, and more
 - **Auto role suggestion** — Maps your skills against 12 role clusters to suggest your best-fit job titles
 
-### 🎯 ATS Scoring Engine
-- **Skill-based matching** — Extracts required skills from any job description and compares against your resume
-- **Match percentage** — Precise ATS compatibility score calculated as `matched_skills / required_skills × 100`
-- **Gap analysis** — Identifies missing skills and generates actionable improvement suggestions
-- **Persistent history** — All evaluation results stored in MongoDB for tracking progress over time
+### 🎯 Futuristic Evaluation Hub
+- **ScoreRing Engine** — Premium animated circular progress indicators with dynamic gradients and soft glow effects for overall ATS scoring.
+- **Deep-Dive feedback categories**: 
+  - **✨ Technical Skills Match** — Precise categorization of "Matches Found" and "Missing Core Skills".
+  - **🏗️ Structure & Formatting** — Layout precision analysis for professional readability.
+  - **🎭 Tone & Content Evolution** — Evaluates professional authority, bullet impact, and metric usage.
+- **Categorized Glass Cards** — Clean, high-contrast feedback modules with success/warning variants for intuitive reading.
+- **Unified Background Theme** — A seamless, integrated experience using a consistent project-wide background (`bg-main.svg`).
 
-### 👤 Intelligent Profile Page
-- **Auto-populated profile** — Upload a resume and your profile fills itself: skills, experience, education, projects, certifications, social links, and suggested roles
-- **Resume re-upload** — Update your resume anytime directly from the profile page; data auto-syncs
-- **Editable preferences** — Manually adjust job preferences, social links, and bio
-- **Glassmorphic UI** — Premium design with backdrop blur, gradient accents, and smooth animations
+### 👤 Premium Glassmorphic UI
+- **Backdrop-Blur Excellence** — Every container is a frosted glass module (`glass-card`) balancing premium aesthetics with accessibility.
+- **Micro-animations** — Smooth entry transitions, hover lifts, and interactive progress bars for a "wow" first impression.
+- **Auto-Syncing Profile** — Upload a resume and your profile fills itself: skills, experience, education, projects, certifications, social links, and suggested roles.
+- **Editable preferences** — Manually adjust job preferences, social links, and bio with a modern HUD interface.
 
 ### 🔐 Authentication & Security
-- **Google OAuth 2.0** — Secure sign-in with Google accounts via Authlib
-- **JWT tokens** — Stateless authentication with configurable expiration
-- **Protected routes** — Frontend route guards + backend middleware for API security
+- **Google OAuth 2.0** — Secure sign-in with Google accounts via Authlib.
+- **JWT tokens** — Stateless authentication with configurable (7-day) expiration.
+- **Protected routes** — Frontend route guards + backend internal middleware for API security.
 
-### 📊 Dashboard
-- **Rich resume cards** — Displays name, skill count, skill tags, and upload date
-- **Grid layout** — Responsive card-based design with hover effects
-- **Quick actions** — Upload new resumes or evaluate existing ones in one click
-
-### 📊 Admin Analytics Dashboard
-- **Premium HUD** — Vibrant gradient-based dashboard for real-time monitoring of Users, Resumes, Evaluations, Logins, and Visits.
-- **Traffic Tracking** — Automated site visit logging with IP and User Agent capture.
-- **Authentication Logs** — Detailed login history tracking for security auditing.
-- **Dynamic Filtering** — Global time-based filtering (Today, Last 7 Days, Last 30 Days) for all performance metrics.
-- **Activity Timeline** — 30-day interactive charts for tracking engagement trends across all event types.
-- **Distribution Reports** — Visual breakdown of ATS scores, skills, and industry/role distribution among the user base.
+### 📊 Admin Analytics Dashboard (HUD)
+- **Premium Performance HUD** — Vibrant gradient-based dashboard for real-time monitoring of Users, Resumes, Evaluations, and Visits.
+- **Traffic Intelligence** — Automated site visit logging with IP and UA capture; 30-day interactive activity charts.
+- **Authentication Audit** — Detailed login history tracking for security monitoring.
+- **Smart Filtering** — Global time-based filtering (Today, Last 7d, Last 30d) for all performance metrics.
 
 ---
 
@@ -251,7 +247,9 @@ PDF → Text Extraction (pdfplumber)
 - [x] Google OAuth authentication
 - [x] PDF resume parsing with smart extraction
 - [x] Auto-populated profile page
-- [x] ATS scoring engine (rule-based)
+- [x] ATS scoring engine (Rule-based)
+- [x] Premium Glassmorphic UI & ScoreRing
+- [x] Futuristic deep-dive evaluation (Tone, Content, Structure)
 - [x] Resume re-upload with auto-sync
 - [x] Suggested roles from skills
 - [x] Analytics dashboard with performance trends

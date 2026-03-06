@@ -75,4 +75,5 @@ export interface User {
     social_links: SocialLinks;
     job_preferences: JobPreferences;
     last_parsed_profile?: ExtractedData;
+    resume_id?: string;
 }

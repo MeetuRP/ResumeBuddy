@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../lib/auth";
 import api from "../lib/api";
 import Navbar from "../components/Navbar";
+import ResumeViewer from "../components/ResumeViewer";
 import type { User } from "../types";
 
 const Profile = () => {
@@ -10,6 +11,8 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [showResumeModal, setShowResumeModal] = useState(false);
+    const [resumeUrl, setResumeUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Fetch fresh profile from backend
@@ -58,12 +61,42 @@ const Profile = () => {
             setProfile(res.data);
             useAuthStore.setState({ user: res.data });
             showMessage("Resume parsed & profile updated! 🚀");
-        } catch {
-            showMessage("Failed to process resume. ❌");
         } finally {
             setUploading(false);
         }
     };
+
+    const handleViewResume = async () => {
+        if (!profile?.resume_id) return;
+        try {
+            const response = await api.get(`/resume/view/${profile.resume_id}`, {
+                responseType: 'blob'
+            });
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            setResumeUrl(url);
+            setShowResumeModal(true);
+        } catch (err) {
+            console.error("Failed to load resume", err);
+            showMessage("Failed to load resume. ❌");
+        }
+    };
+
+    // Cleanup URL and lock body scroll on modal toggle
+    useEffect(() => {
+        if (showResumeModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+            if (resumeUrl) {
+                URL.revokeObjectURL(resumeUrl);
+                setResumeUrl(null);
+            }
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showResumeModal, resumeUrl]);
 
     const showMessage = (msg: string) => {
         setMessage(msg);
@@ -156,9 +189,36 @@ const Profile = () => {
                             >
                                 {uploading ? "Parsing..." : "📄 Update Resume"}
                             </button>
+                            {profile.resume_id && (
+                                <button
+                                    onClick={handleViewResume}
+                                    className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-2xl text-sm font-bold hover:bg-indigo-100 transition-all shadow-sm"
+                                >
+                                    👁️ View Resume
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
+
+                {/* Resume Modal */}
+                {showResumeModal && resumeUrl && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={() => setShowResumeModal(false)}></div>
+                        <div className="bg-white rounded-3xl w-full max-w-5xl h-[90vh] shadow-2xl relative overflow-hidden flex flex-col animate-in zoom-in duration-300">
+                            <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
+                                <h3 className="text-xl font-bold text-gray-900">Your Resume</h3>
+                                <button
+                                    onClick={() => setShowResumeModal(false)}
+                                    className="w-10 h-10 rounded-full bg-white border flex items-center justify-center text-gray-500 hover:text-black hover:border-gray-900 transition-all font-bold text-xl"
+                                >×</button>
+                            </div>
+                            <div className="flex-grow bg-slate-50 relative min-h-0">
+                                <ResumeViewer url={resumeUrl || ""} />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* =================== MAIN GRID =================== */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
