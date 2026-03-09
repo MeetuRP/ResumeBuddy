@@ -7,7 +7,7 @@ const Navbar = () => {
     return (
         <nav className="navbar">
             <Link to="/">
-                <p className="text-2xl font-bold text-gradient uppercase tracking-widest">ResumeBuddy</p>
+                <p className="text-2xl font-bold text-gradient uppercase tracking-widest">AntiGhost CV</p>
             </Link>
             <div className="flex items-center gap-4">
                 {isAuthenticated ? (

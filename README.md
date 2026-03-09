@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🚀 ResumeBuddy
+# 🚀 AntiGhost CV
 
-### The Futuristic Resume Intelligence Platform
+### Stop getting left on 'read' by Workday.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -13,7 +13,7 @@
 
 **Upload once. Get premium insights forever.**
 
-ResumeBuddy is a state-of-the-art platform that transforms static PDFs into dynamic intelligence. Features a **premium glassmorphic UI**, **animated scoring engines**, and **futuristic feedback categories** (Tone, Content, Structure) — all self-contained with smart extraction algorithms.
+AntiGhost CV is a state-of-the-art platform that transforms static PDFs into dynamic intelligence. Features a **premium glassmorphic UI**, **animated scoring engines**, and **futuristic feedback categories** (Tone, Content, Structure) — all self-contained with smart extraction algorithms.
 
 [Getting Started](#-getting-started) · [Features](#-features) · [Architecture](#-architecture) · [Tech Stack](#%EF%B8%8F-tech-stack)
 
@@ -143,8 +143,8 @@ resume_analyzer/
 ### 1. Clone & Setup
 
 ```bash
-git clone https://github.com/MeetuRP/ResumeBuddy.git
-cd ResumeBuddy
+git clone https://github.com/MeetuRP/AntiGhostCV.git
+cd AntiGhostCV
 ```
 
 ### 2. Backend Setup

@@ -302,7 +302,7 @@ const AdminDashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                         <div>
                             <h1 className="text-gradient" style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>🛡️ Admin Panel</h1>
-                            <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>Analytics & data management for ResumeBuddy</p>
+                            <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>Analytics & data management for AntiGhost CV</p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(99,102,241,0.08)', padding: '8px 16px', borderRadius: 12 }}>
                             <span style={{ fontSize: 12, color: '#6366f1', fontWeight: 600 }}>Admin: {user?.email}</span>

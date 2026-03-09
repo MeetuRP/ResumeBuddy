@@ -5,7 +5,7 @@ from .database import connect_to_mongo, close_mongo_connection
 from .config import settings
 from .routes import auth, resume, analysis, admin, events
 
-app = FastAPI(title="ResumeBuddy AI API")
+app = FastAPI(title="AntiGhost CV AI API")
 
 # CORS setup
 app.add_middleware(
@@ -35,4 +35,4 @@ app.include_router(events.router, prefix="/api/events", tags=["Events"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to ResumeBuddy AI API"}
+    return {"message": "Welcome to AntiGhost CV AI API"}
