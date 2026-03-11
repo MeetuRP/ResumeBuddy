@@ -77,3 +77,13 @@ export interface User {
     last_parsed_profile?: ExtractedData;
     resume_id?: string;
 }
+
+export interface EvaluationSummary {
+    id: string;
+    resume_id: string;
+    resume_name: string;
+    job_title: string;
+    ats_score: number;
+    summary: string;
+    created_at: string;
+}

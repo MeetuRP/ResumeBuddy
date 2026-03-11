@@ -15,6 +15,8 @@ const Results = () => {
     const [searchParams] = useSearchParams();
     const rawAnalysisId = searchParams.get('analysisId');
     const analysisId = (rawAnalysisId && rawAnalysisId !== "undefined" && rawAnalysisId !== "null") ? rawAnalysisId : null;
+    const rawEvaluationId = searchParams.get('evaluationId');
+    const evaluationId = (rawEvaluationId && rawEvaluationId !== "undefined" && rawEvaluationId !== "null") ? rawEvaluationId : null;
 
     const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
     const [resumeUrl, setResumeUrl] = useState<string | null>(null);
@@ -28,9 +30,54 @@ const Results = () => {
     const [showTemplatePicker, setShowTemplatePicker] = useState(false);
     const [loadingStructured, setLoadingStructured] = useState(false);
 
+    // Helper to load resume viewer + template engine for a given resume_id
+    const loadResumeAssets = async (resumeId: string) => {
+        try {
+            const resBlob = await api.get(`/resume/view/${resumeId}`, { responseType: 'blob' });
+            const url = URL.createObjectURL(new Blob([resBlob.data], { type: 'application/pdf' }));
+            setResumeUrl(url);
+        } catch (e) {
+            console.error("Failed to load resume blob", e);
+        }
+
+        setLoadingStructured(true);
+        try {
+            const structRes = await api.get(`/resume/structured/${resumeId}`);
+            setStructuredResume(structRes.data.structured_resume);
+            setSelectedTemplate(structRes.data.selected_template || "modern-ats");
+        } catch (e) {
+            console.error("Structured resume not available:", e);
+        } finally {
+            setLoadingStructured(false);
+        }
+    };
+
     useEffect(() => {
         const fetchResults = async () => {
             try {
+                // ── Path 1: Load from evaluation history ────────────
+                if (evaluationId) {
+                    const evalRes = await api.get(`/evaluations/${evaluationId}`);
+                    const ev = evalRes.data;
+                    // Map evaluation document to AnalysisResult shape
+                    setAnalysis({
+                        id: ev.id,
+                        user_id: ev.user_id,
+                        resume_id: ev.resume_id,
+                        job_title: ev.job_title,
+                        job_description: ev.job_description,
+                        ats_score: ev.ats_score,
+                        skills_matched: ev.skills_matched || [],
+                        missing_skills: ev.missing_skills || [],
+                        summary: ev.summary || "",
+                        suggestions: ev.suggestions || [],
+                        created_at: ev.created_at,
+                    });
+                    await loadResumeAssets(ev.resume_id);
+                    return;
+                }
+
+                // ── Path 2: Load from analysis history (existing) ──
                 const response = await api.get('/analysis/history');
                 const history = response.data;
                 if (history.length === 0) return;
@@ -41,26 +88,7 @@ const Results = () => {
 
                 if (item) {
                     setAnalysis(item);
-                    // Fetch resume blob for original viewer
-                    try {
-                        const resBlob = await api.get(`/resume/view/${item.resume_id}`, { responseType: 'blob' });
-                        const url = URL.createObjectURL(new Blob([resBlob.data], { type: 'application/pdf' }));
-                        setResumeUrl(url);
-                    } catch (e) {
-                        console.error("Failed to load resume blob", e);
-                    }
-
-                    // Fetch structured resume for template engine
-                    setLoadingStructured(true);
-                    try {
-                        const structRes = await api.get(`/resume/structured/${item.resume_id}`);
-                        setStructuredResume(structRes.data.structured_resume);
-                        setSelectedTemplate(structRes.data.selected_template || "modern-ats");
-                    } catch (e) {
-                        console.error("Structured resume not available:", e);
-                    } finally {
-                        setLoadingStructured(false);
-                    }
+                    await loadResumeAssets(item.resume_id);
                 }
             } catch (err) {
                 console.error("Failed to fetch results", err);
@@ -69,7 +97,7 @@ const Results = () => {
         fetchResults();
 
         return () => { if (resumeUrl) URL.revokeObjectURL(resumeUrl); };
-    }, [analysisId]);
+    }, [analysisId, evaluationId]);
 
     const handleTemplateChange = async (id: TemplateId) => {
         setSelectedTemplate(id);

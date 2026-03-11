@@ -15,6 +15,9 @@ const Navbar = () => {
                         <Link to="/upload" className="primary-button w-fit text-sm">
                             New Upload
                         </Link>
+                        <Link to="/history" className="text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors">
+                            History
+                        </Link>
                         <div className="flex items-center gap-3 pl-2 border-l border-gray-200">
                             <Link to="/me" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden shadow-sm">

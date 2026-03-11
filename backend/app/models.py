@@ -110,3 +110,23 @@ class AnalysisResultModel(BaseModel):
     summary: str
     suggestions: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class EvaluationModel(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+    )
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    user_id: str
+    resume_id: str
+    resume_name: str = "Untitled Resume"
+    job_title: str
+    job_description: str
+    ats_score: int
+    skills_matched: List[str] = []
+    missing_skills: List[str] = []
+    summary: str = ""
+    suggestions: List[str] = []
+    accepted_edits: dict = Field(default_factory=dict)
+    impact_scores: dict = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)

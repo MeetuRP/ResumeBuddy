@@ -112,6 +112,32 @@ async def evaluate_resume(
     
     result = await db.analysis_results.insert_one(analysis.model_dump(by_alias=True, exclude={"id"}))
 
+    # ── Auto-save to evaluations collection ──────────────────────────
+    resume_name = (
+        resume.extracted_data.name
+        or resume.extracted_data.email
+        or "Untitled Resume"
+    )
+
+    from ..models import EvaluationModel
+    evaluation = EvaluationModel(
+        user_id=str(current_user.id),
+        resume_id=resume_id,
+        resume_name=resume_name,
+        job_title=job_title,
+        job_description=job_description,
+        ats_score=ats_score,
+        skills_matched=jd_skills_matched,
+        missing_skills=jd_missing_skills,
+        summary=analysis.summary,
+        suggestions=suggestions,
+        accepted_edits=resume_data.get("accepted_edits", {}),
+        impact_scores=resume_data.get("impact_scores", {}),
+    )
+    eval_result = await db.evaluations.insert_one(
+        evaluation.model_dump(by_alias=True, exclude={"id"})
+    )
+
     # Log score check event for admin analytics
     from ..services.events import log_event
     await log_event("score_check", user_id=str(current_user.id), metadata={"job_title": job_title, "ats_score": ats_score})
@@ -119,6 +145,7 @@ async def evaluate_resume(
     # Return a plain dict with string 'id' for frontend
     return {
         "id": str(result.inserted_id),
+        "evaluation_id": str(eval_result.inserted_id),
         "user_id": str(current_user.id),
         "resume_id": resume_id,
         "job_title": job_title,

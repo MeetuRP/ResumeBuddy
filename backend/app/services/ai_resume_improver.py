@@ -1,100 +1,151 @@
 import os
-from pydantic import BaseModel
-from typing import List, Optional
 import json
+import asyncio
+from typing import List, Optional, Dict
+from pydantic import BaseModel
+from google import genai
+from google.genai import types
+from ..config import settings
 
 class ImprovementResponse(BaseModel):
     improved_text: str
     impact_score: int
+    suggestions: List[str] = []
 
 class OptimizeResponse(BaseModel):
     summary: str
-    bullets: dict
+    bullets: Dict[str, str]
 
 class AIResumeImprover:
     def __init__(self):
-        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.api_key = settings.GEMINI_API_KEY
         if self.api_key:
-            from openai import AsyncOpenAI
-            self.client = AsyncOpenAI(api_key=self.api_key)
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+                self.model_name = "gemini-2.5-flash"
+            except Exception as e:
+                print(f"Gemini Client Initialization Error: {e}")
+                self.client = None
         else:
             self.client = None
 
-    async def improve_line(self, text: str, job_description: str, section: str) -> ImprovementResponse:
+    async def generate_resume_improvement(self, section_type: str, content: str, job_description: str) -> ImprovementResponse:
         """
-        Suggests an improvement for a single line (bullet points, summary) and rates the impact.
-        Fallback to mock responses if API key is missing.
+        Generic wrapper for Gemini-powered resume improvement using the new google-genai SDK.
         """
         if not self.client:
-            # Mock behavior based on length or simple keywords
+            # Fallback mock if API key is missing
             import random
-            score = random.randint(3, 8)
-            improved = f"{text} by incorporating measurable impacts and aligned with JD."
-            if "developed" in text.lower() or "worked" in text.lower():
-                improved = f"Engineered and delivered scalable solutions for {text}, increasing efficiency by 30%."
-            
-            return ImprovementResponse(improved_text=improved, impact_score=score + 2 if score < 8 else score)
+            return ImprovementResponse(
+                improved_text=f"{content} (AI improvement mock: aligned with {section_type})",
+                impact_score=random.randint(6, 9),
+                suggestions=["Add more quantifiable metrics.", "Use stronger action verbs."]
+            )
+
+        system_prompt = "You are an expert technical recruiter and resume optimizer. Your job is to improve resumes to maximize ATS ranking and recruiter appeal."
+        
+        user_prompt = f"""
+Improve the following resume section for a professional ATS-friendly resume.
+
+Section Type: {section_type}
+
+Job Description:
+{job_description}
+
+Original Content:
+{content}
+
+Rules:
+* Use strong action verbs
+* Add measurable impact when possible
+* Highlight technologies and skills
+* Keep formatting ATS friendly
+* Return concise professional text
+
+Return JSON (and ONLY JSON) in the following format:
+{{
+"improved_text": "...",
+"impact_score": number,
+"suggestions": ["...", "..."]
+}}
+"""
 
         try:
-            prompt = f"""
-            You are an expert resume writer and ATS optimizer. 
-            Improve the following {section} from a resume to match the given job description. 
-            Make it sound professional, action-oriented, and include measurable metrics if vaguely implied.
+            # The new SDK is synchronous, so we run it in an executor
+            def call_gemini():
+                return self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=f"{system_prompt}\n\n{user_prompt}",
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                    )
+                )
+
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, call_gemini)
             
-            CRITICAL INSTRUCTION: You are a text replacement tool. Return ONLY the newly optimized sentence. 
-            Do not include any conversational filler, labels, or introductory text like 'Optimized experience:' or 'Here is the fix:'. 
-            Just return the raw optimized text.
-            
-            Original Text: "{text}"
-            Job Description Snapshot: "{job_description[:500]}"
-            
-            Respond with JSON containing:
-            "improved_text": string (the raw text only)
-            "impact_score": int (1-10 rating of the NEW text's strength compared to the old one).
-            """
-            response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={ "type": "json_object" }
+            data = json.loads(response.text)
+            return ImprovementResponse(
+                improved_text=data.get("improved_text", content),
+                impact_score=data.get("impact_score", 7),
+                suggestions=data.get("suggestions", [])
             )
-            data = json.loads(response.choices[0].message.content)
-            return ImprovementResponse(**data)
         except Exception as e:
-            # Fallback on error
-            print(f"AI Improvement Error: {e}")
-            return ImprovementResponse(improved_text=f"Improved: {text}", impact_score=7)
+            print(f"Gemini AI Error: {e}")
+            # If 2.5-flash fails because it's too new/unavailable, try 2.0-flash or 1.5-flash as fallback to keep app running
+            if "not found" in str(e).lower() or "not supported" in str(e).lower():
+                try:
+                    print("Attempting fallback to gemini-2.0-flash...")
+                    def call_fallback():
+                        return self.client.models.generate_content(
+                            model="gemini-2.0-flash",
+                            contents=f"{system_prompt}\n\n{user_prompt}",
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                            )
+                        )
+                    response = await loop.run_in_executor(None, call_fallback)
+                    data = json.loads(response.text)
+                    return ImprovementResponse(
+                        improved_text=data.get("improved_text", content),
+                        impact_score=data.get("impact_score", 7),
+                        suggestions=data.get("suggestions", [])
+                    )
+                except Exception as e2:
+                    print(f"Gemini Fallback Error: {e2}")
+
+            return ImprovementResponse(
+                improved_text="AI improvement unavailable. Please check your API key and quota.",
+                impact_score=0,
+                suggestions=[]
+            )
+
+    async def improve_line(self, text: str, job_description: str, section: str) -> ImprovementResponse:
+        """
+        Suggests an improvement for a single line and rates the impact.
+        """
+        return await self.generate_resume_improvement(section, text, job_description)
 
     async def optimize_resume(self, extracted_data: dict, job_description: str) -> OptimizeResponse:
         """
-        Suggests a complete rewrite of the summary and improvements to core bullets based on the JD.
+        Suggests a complete rewrite of the summary and core bullets.
         """
-        if not self.client:
-            return OptimizeResponse(
-                summary="Dynamic professional with a proven track record of optimizing systems and driving results, fully aligned with the requirements of this role.",
-                bullets={
-                    "experience": "Enhanced performance and scalability across key projects.",
-                }
-            )
+        # Optimize summary
+        summary_res = await self.generate_resume_improvement("Summary", extracted_data.get("summary", ""), job_description)
+        
+        # Optimize top bullets (simplified for now)
+        exp = extracted_data.get("experience", [])
+        bullets = {}
+        if exp:
+            # Just optimize the first few bullets for the 'optimize' overview
+            for item in exp[:2]:
+                if isinstance(item, str):
+                    imp = await self.generate_resume_improvement("Experience", item, job_description)
+                    bullets[item] = imp.improved_text
 
-        try:
-            prompt = f"""
-            You are an expert resume writer. Given this resume data and job description, provide:
-            1. A highly tailored summary (max 3 sentences).
-            2. 2-3 improved bullet points tailored to the JD.
-            
-            Return JSON:
-            "summary": string
-            "bullets": dict mapping original text or section to improved text
-            """
-            response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={ "type": "json_object" }
-            )
-            data = json.loads(response.choices[0].message.content)
-            return OptimizeResponse(**data)
-        except Exception as e:
-            print(f"AI Optimize Error: {e}")
-            return OptimizeResponse(summary="Optimized Summary", bullets={})
+        return OptimizeResponse(
+            summary=summary_res.improved_text,
+            bullets=bullets
+        )
 
 improver_service = AIResumeImprover()

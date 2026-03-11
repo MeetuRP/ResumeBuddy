@@ -13,7 +13,7 @@ interface FixItOverlayProps {
 const FixItOverlay: React.FC<FixItOverlayProps> = ({ items, styles, viewport, jobDescription, onAcceptEdit }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
-    const [suggestion, setSuggestion] = useState<{ index: number, text: string, score: number } | null>(null);
+    const [suggestion, setSuggestion] = useState<{ index: number, text: string, score: number, suggestions: string[] } | null>(null);
     const [acceptedEdits, setAcceptedEdits] = useState<Record<number, string>>({});
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -136,7 +136,8 @@ const FixItOverlay: React.FC<FixItOverlayProps> = ({ items, styles, viewport, jo
             setSuggestion({
                 index,
                 text: res.data.improved_text,
-                score: res.data.impact_score
+                score: res.data.impact_score,
+                suggestions: res.data.suggestions || []
             });
         } catch (err) {
             console.error("Failed to improve line:", err);
@@ -144,7 +145,8 @@ const FixItOverlay: React.FC<FixItOverlayProps> = ({ items, styles, viewport, jo
             setSuggestion({
                 index,
                 text: "Optimized: " + text,
-                score: 8
+                score: 8,
+                suggestions: ["Add quantifiable metrics.", "Align with key job requirements."]
             });
         } finally {
             setLoadingIndex(null);
@@ -296,10 +298,23 @@ const FixItOverlay: React.FC<FixItOverlayProps> = ({ items, styles, viewport, jo
                                         </div>
                                     </div>
 
-                                    <div className="text-sm text-slate-800 mb-5 leading-relaxed font-medium bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                        {/* Highlight changes visually in popup */}
+                                    <div className="text-sm text-slate-800 mb-4 leading-relaxed font-medium bg-slate-50 p-4 rounded-xl border border-slate-100">
                                         <span className="text-green-700">{activeSuggestion.text}</span>
                                     </div>
+
+                                    {activeSuggestion.suggestions && activeSuggestion.suggestions.length > 0 && (
+                                        <div className="mb-5">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Why this helps</p>
+                                            <ul className="space-y-1.5">
+                                                {activeSuggestion.suggestions.map((s, i) => (
+                                                    <li key={i} className="flex gap-2 text-[12px] text-slate-600 leading-tight">
+                                                        <span className="text-indigo-400 mt-0.5">•</span>
+                                                        {s}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
 
                                     <div className="flex gap-2">
                                         <button

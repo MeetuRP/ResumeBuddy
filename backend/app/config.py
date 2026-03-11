@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     FRONTEND_URL: str = "http://localhost:5173"
+    GEMINI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

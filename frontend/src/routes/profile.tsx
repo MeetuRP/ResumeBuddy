@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router";
 import { useAuthStore } from "../lib/auth";
 import api from "../lib/api";
 import Navbar from "../components/Navbar";
@@ -121,7 +122,13 @@ const Profile = () => {
     return (
         <main className="bg-[url('/images/bg-main.svg')] bg-cover min-h-screen">
             <Navbar />
-            <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+            <div className="max-w-6xl mx-auto px-4 py-4 space-y-6">
+                <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors group">
+                    <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Dashboard
+                </Link>
                 {/* Toast Message */}
                 {message && (
                     <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-white/90 backdrop-blur-lg border border-indigo-200 text-indigo-700 px-6 py-3 rounded-2xl shadow-2xl font-medium animate-bounce">

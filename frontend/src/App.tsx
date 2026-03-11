@@ -8,6 +8,7 @@ import Upload from './routes/upload';
 import Evaluate from './routes/evaluate';
 import Results from './routes/results';
 import Profile from './routes/profile';
+import History from './routes/history';
 import AdminDashboard from './routes/admin/dashboard';
 import api from './lib/api';
 
@@ -39,6 +40,7 @@ function App() {
         <Route path="/evaluate" element={<ProtectedRoute><Evaluate /></ProtectedRoute>} />
         <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
         <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>

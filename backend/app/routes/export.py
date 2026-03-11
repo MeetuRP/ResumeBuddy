@@ -19,12 +19,27 @@ import hashlib
 def _merge_accepted_edits(data: dict, accepted_edits: dict) -> dict:
     """
     Recursively (or flatly) replace text in structured data with accepted AI improvements.
-    Uses MD5 hashes of original text as keys to find matches.
+    Uses MD5 hashes of original text as keys, then falls back to normalized matching.
     """
     if not accepted_edits:
         return data
 
     import json
+    import re
+    import hashlib
+
+    def normalize(text: str) -> str:
+        # Lowercase, remove all non-alphanumeric, collapse whitespace
+        text = text.lower()
+        text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+        return " ".join(text.split())
+
+    # Map normalized original text to its improvements
+    norm_edits = {}
+    for key, val in accepted_edits.items():
+        if isinstance(val, dict) and "original" in val:
+            norm_edits[normalize(val["original"])] = val["improved"]
+
     # Deep copy
     data_str = json.dumps(data)
     merged = json.loads(data_str)
@@ -32,10 +47,23 @@ def _merge_accepted_edits(data: dict, accepted_edits: dict) -> dict:
 
     def apply_to_item(item):
         if isinstance(item, str):
+            # Check for exact hash first (legacy/precise)
             h = hashlib.md5(item.encode('utf-8')).hexdigest()
             if h in accepted_edits:
                 stats["merged"] += 1
                 return accepted_edits[h]["improved"]
+            
+            # Fallback to normalized matching
+            item_norm = normalize(item)
+            if item_norm in norm_edits:
+                stats["merged"] += 1
+                return norm_edits[item_norm]
+            
+            # Check if item is a substring or container of an edit (for bullet points)
+            for orig_norm, improved in norm_edits.items():
+                if len(orig_norm) > 10 and (orig_norm in item_norm or item_norm in orig_norm):
+                    stats["merged"] += 1
+                    return improved
         elif isinstance(item, list):
             return [apply_to_item(i) for i in item]
         elif isinstance(item, dict):
@@ -44,7 +72,7 @@ def _merge_accepted_edits(data: dict, accepted_edits: dict) -> dict:
 
     result = apply_to_item(merged)
     print(f"[Export] Merged {stats['merged']} edits into document data")
-    return result
+    return result, stats["merged"]
 
 
 def _build_docx_from_structured(data: dict) -> bytes:
@@ -239,7 +267,8 @@ async def export_pdf(resume_id: str, current_user: UserModel = Depends(get_curre
     )
     
     accepted_edits = resume.get("accepted_edits", {})
-    merged_data = _merge_accepted_edits(base_data, accepted_edits)
+    merged_data, count = _merge_accepted_edits(base_data, accepted_edits)
+    print(f"[Export] Merged {count} edits into PDF data for resume {resume_id}")
 
     pdf_bytes = _build_pdf_from_structured(merged_data)
 
