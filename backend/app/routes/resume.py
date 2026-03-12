@@ -60,6 +60,10 @@ async def upload_resume(
     # Log upload event for admin analytics
     from ..services.events import log_event
     await log_event("resume_upload", user_id=str(current_user.id))
+    
+    # Increment scan usage
+    from ..services.usage import increment_user_usage
+    await increment_user_usage(str(current_user.id), "jd_scans_used")
 
     # ============================================================
     # AUTO-SYNC: Populate user profile from parsed resume data

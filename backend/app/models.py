@@ -43,6 +43,23 @@ class ExtractedData(BaseModel):
     hyperlinks: List[dict] = []  # embedded PDF annotation links
     suggested_roles: List[str] = []
 
+class PlanLimits(BaseModel):
+    jd_scans: int = 2
+    fix_it_uses: int = 0
+    cover_letters: int = 0
+
+class UserUsage(BaseModel):
+    resume_evaluations: int = 0
+    jd_scans_used: int = 0
+    fix_it_used: int = 0
+    cover_letters_generated: int = 0
+
+class AIUsage(BaseModel):
+    total_api_calls: int = 0
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    estimated_cost: float = 0.0
+
 class UserModel(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -59,6 +76,15 @@ class UserModel(BaseModel):
     job_preferences: JobPreferences = Field(default_factory=JobPreferences)
     last_parsed_profile: Optional[ExtractedData] = None
     resume_id: Optional[str] = None
+    
+    # SaaS Plan Fields
+    plan: str = "starter"
+    plan_start: Optional[datetime] = None
+    plan_expiry: Optional[datetime] = None
+    plan_limits: PlanLimits = Field(default_factory=PlanLimits)
+    usage: UserUsage = Field(default_factory=UserUsage)
+    ai_usage: AIUsage = Field(default_factory=AIUsage)
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class UserProfileUpdate(BaseModel):

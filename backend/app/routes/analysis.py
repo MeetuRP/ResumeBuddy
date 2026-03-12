@@ -142,6 +142,11 @@ async def evaluate_resume(
     from ..services.events import log_event
     await log_event("score_check", user_id=str(current_user.id), metadata={"job_title": job_title, "ats_score": ats_score})
     
+    # Increment usage counters
+    from ..services.usage import increment_user_usage
+    await increment_user_usage(str(current_user.id), "resume_evaluations")
+    await increment_user_usage(str(current_user.id), "jd_scans_used")
+    
     # Return a plain dict with string 'id' for frontend
     return {
         "id": str(result.inserted_id),
@@ -177,7 +182,12 @@ class ImproveLineRequest(BaseModel):
 @router.post("/improve-line")
 async def improve_line(req: ImproveLineRequest, current_user: UserModel = Depends(get_current_user)):
     from ..services.ai_resume_improver import improver_service
-    res = await improver_service.improve_line(req.text, req.job_description, req.section)
+    res = await improver_service.improve_line(req.text, req.job_description, req.section, user_id=str(current_user.id))
+    
+    # Increment usage counter
+    from ..services.usage import increment_user_usage
+    await increment_user_usage(str(current_user.id), "fix_it_used")
+    
     return res
 
 class OptimizeResumeRequest(BaseModel):
@@ -197,7 +207,12 @@ async def optimize_resume(req: OptimizeResumeRequest, current_user: UserModel = 
     if not resume_data:
         raise HTTPException(status_code=404, detail="Resume not found")
         
-    res = await improver_service.optimize_resume(resume_data.get("extracted_data", {}), req.job_description)
+    res = await improver_service.optimize_resume(resume_data.get("extracted_data", {}), req.job_description, user_id=str(current_user.id))
+    
+    # Increment usage counter
+    from ..services.usage import increment_user_usage
+    await increment_user_usage(str(current_user.id), "fix_it_used")
+    
     return res
 
 class SaveEditRequest(BaseModel):

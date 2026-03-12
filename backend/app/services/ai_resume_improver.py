@@ -29,7 +29,7 @@ class AIResumeImprover:
         else:
             self.client = None
 
-    async def generate_resume_improvement(self, section_type: str, content: str, job_description: str) -> ImprovementResponse:
+    async def generate_resume_improvement(self, section_type: str, content: str, job_description: str, user_id: Optional[str] = None) -> ImprovementResponse:
         """
         Generic wrapper for Gemini-powered resume improvement using the new google-genai SDK.
         """
@@ -84,6 +84,18 @@ Return JSON (and ONLY JSON) in the following format:
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(None, call_gemini)
             
+            # Track Token Usage if user_id is provided
+            if user_id and response.usage_metadata:
+                try:
+                    from .usage import update_ai_usage
+                    # The SDK usage metadata structure
+                    input_tokens = response.usage_metadata.prompt_token_count or 0
+                    output_tokens = response.usage_metadata.candidates_token_count or 0
+                    # Run tracking asynchronously without blocking the response
+                    asyncio.create_task(update_ai_usage(user_id, input_tokens, output_tokens))
+                except Exception as track_err:
+                    print(f"Usage Tracking Error: {track_err}")
+
             data = json.loads(response.text)
             return ImprovementResponse(
                 improved_text=data.get("improved_text", content),
@@ -105,6 +117,14 @@ Return JSON (and ONLY JSON) in the following format:
                             )
                         )
                     response = await loop.run_in_executor(None, call_fallback)
+
+                    # Track Token Usage for Fallback
+                    if user_id and response.usage_metadata:
+                        from .usage import update_ai_usage
+                        input_tokens = response.usage_metadata.prompt_token_count or 0
+                        output_tokens = response.usage_metadata.candidates_token_count or 0
+                        asyncio.create_task(update_ai_usage(user_id, input_tokens, output_tokens))
+
                     data = json.loads(response.text)
                     return ImprovementResponse(
                         improved_text=data.get("improved_text", content),
@@ -120,18 +140,18 @@ Return JSON (and ONLY JSON) in the following format:
                 suggestions=[]
             )
 
-    async def improve_line(self, text: str, job_description: str, section: str) -> ImprovementResponse:
+    async def improve_line(self, text: str, job_description: str, section: str, user_id: Optional[str] = None) -> ImprovementResponse:
         """
         Suggests an improvement for a single line and rates the impact.
         """
-        return await self.generate_resume_improvement(section, text, job_description)
+        return await self.generate_resume_improvement(section, text, job_description, user_id)
 
-    async def optimize_resume(self, extracted_data: dict, job_description: str) -> OptimizeResponse:
+    async def optimize_resume(self, extracted_data: dict, job_description: str, user_id: Optional[str] = None) -> OptimizeResponse:
         """
         Suggests a complete rewrite of the summary and core bullets.
         """
         # Optimize summary
-        summary_res = await self.generate_resume_improvement("Summary", extracted_data.get("summary", ""), job_description)
+        summary_res = await self.generate_resume_improvement("Summary", extracted_data.get("summary", ""), job_description, user_id)
         
         # Optimize top bullets (simplified for now)
         exp = extracted_data.get("experience", [])
@@ -140,7 +160,7 @@ Return JSON (and ONLY JSON) in the following format:
             # Just optimize the first few bullets for the 'optimize' overview
             for item in exp[:2]:
                 if isinstance(item, str):
-                    imp = await self.generate_resume_improvement("Experience", item, job_description)
+                    imp = await self.generate_resume_improvement("Experience", item, job_description, user_id)
                     bullets[item] = imp.improved_text
 
         return OptimizeResponse(

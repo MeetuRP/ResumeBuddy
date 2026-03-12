@@ -4,9 +4,15 @@ from ..models import UserModel, AdminUserUpdate
 from ..database import get_db
 from bson import ObjectId
 from datetime import datetime, timedelta
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 
+class PlanChangeRequest(BaseModel):
+    user_id: str
+    plan: str
+    expiry: Optional[datetime] = None
 
 @router.get("/stats")
 async def get_stats(period: str = "30d", admin: UserModel = Depends(require_admin)):
@@ -36,6 +42,21 @@ async def get_stats(period: str = "30d", admin: UserModel = Depends(require_admi
     p_resumes = await db.resumes.count_documents({"uploaded_at": {"$gte": start_date}})
     p_evals = await db.analysis_results.count_documents({"created_at": {"$gte": start_date}})
 
+    # AI Aggregate Stats
+    ai_pipeline = [
+        {"$group": {
+            "_id": None,
+            "total_calls": {"$sum": "$ai_usage.total_api_calls"},
+            "total_input": {"$sum": "$ai_usage.total_input_tokens"},
+            "total_output": {"$sum": "$ai_usage.total_output_tokens"},
+            "total_cost": {"$sum": "$ai_usage.estimated_cost"},
+        }}
+    ]
+    ai_stats_result = await db.users.aggregate(ai_pipeline).to_list(length=1)
+    ai_totals = ai_stats_result[0] if ai_stats_result else {
+        "total_calls": 0, "total_input": 0, "total_output": 0, "total_cost": 0
+    }
+
     return {
         "totals": {
             "users": total_users,
@@ -43,6 +64,7 @@ async def get_stats(period: str = "30d", admin: UserModel = Depends(require_admi
             "evaluations": total_evaluations,
             "visits": total_visits,
             "logins": total_logins,
+            "ai": ai_totals
         },
         "period": {
             "logins": p_logins,
@@ -77,6 +99,11 @@ async def get_all_users(admin: UserModel = Depends(require_admin)):
             "social_links": u.get("social_links", {}),
             "job_preferences": u.get("job_preferences", {}),
             "last_parsed_profile": u.get("last_parsed_profile"),
+            "plan": u.get("plan", "starter"),
+            "plan_expiry": u.get("plan_expiry", "").isoformat() if u.get("plan_expiry") else None,
+            "usage": u.get("usage", {"resume_evaluations": 0, "jd_scans_used": 0, "fix_it_used": 0}),
+            "ai_usage": u.get("ai_usage", {"total_api_calls": 0, "total_input_tokens": 0, "total_output_tokens": 0, "estimated_cost": 0}),
+            "plan_limits": u.get("plan_limits", {"jd_scans": 2, "fix_it_uses": 0, "cover_letters": 0}),
             "created_at": u.get("created_at", "").isoformat() if u.get("created_at") else None,
         })
 
@@ -337,3 +364,51 @@ async def delete_user(user_id: str, admin: UserModel = Depends(require_admin)):
         return {"message": "User and all associated data deleted"}
     except Exception as e:
         return {"error": str(e)}
+
+@router.post("/change-plan")
+async def change_user_plan(req: PlanChangeRequest, admin: UserModel = Depends(require_admin)):
+    """Change a user's plan, update limits, and reset usage."""
+    db = get_db()
+    
+    # Define limits based on plan type
+    # For now, assigning arbitrary generous limits for paid passes, and defaults for starter
+    plan_limits = {
+        "jd_scans": 2,
+        "fix_it_uses": 0,
+        "cover_letters": 0
+    }
+    
+    if req.plan == "24_hour_pass":
+        plan_limits = {"jd_scans": 50, "fix_it_uses": 50, "cover_letters": 10}
+        if not req.expiry:
+            req.expiry = datetime.utcnow() + timedelta(days=1)
+    elif req.plan == "season_pass":
+        plan_limits = {"jd_scans": 500, "fix_it_uses": 500, "cover_letters": 100}
+        if not req.expiry:
+            req.expiry = datetime.utcnow() + timedelta(days=90)
+    elif req.plan == "premium":
+        plan_limits = {"jd_scans": 9999, "fix_it_uses": 9999, "cover_letters": 9999}
+        if not req.expiry:
+            req.expiry = datetime.utcnow() + timedelta(days=365*10)
+            
+    try:
+        oid = ObjectId(req.user_id)
+        update_data = {
+            "plan": req.plan,
+            "plan_start": datetime.utcnow(),
+            "plan_expiry": req.expiry,
+            "plan_limits": plan_limits,
+            "usage": {
+                "resume_evaluations": 0,
+                "jd_scans_used": 0,
+                "fix_it_used": 0
+            }
+        }
+        
+        result = await db.users.update_one({"_id": oid}, {"$set": update_data})
+        if result.matched_count == 0:
+            return {"error": "User not found"}
+        return {"message": "Plan changed successfully and usage reset", "new_plan": req.plan}
+    except Exception as e:
+        return {"error": str(e)}
+

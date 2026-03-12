@@ -64,6 +64,20 @@ export interface JobPreferences {
     remote_preferred: boolean;
 }
 
+export interface PlanLimits {
+    jd_scans: number;
+    fix_it_uses: number;
+    cover_letters: number;
+}
+
+export interface UserUsage {
+    resume_evaluations: number;
+    jd_scans_used: number;
+    fix_it_used: number;
+    cover_letters_generated: number;
+}
+
+
 export interface User {
     id: string;
     google_id: string;
@@ -76,6 +90,11 @@ export interface User {
     job_preferences: JobPreferences;
     last_parsed_profile?: ExtractedData;
     resume_id?: string;
+    plan: string;
+    plan_start?: string;
+    plan_expiry?: string;
+    plan_limits: PlanLimits;
+    usage: UserUsage;
 }
 
 export interface EvaluationSummary {
