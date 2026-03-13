@@ -2,7 +2,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { useEffect } from 'react';
 import { useAuthStore } from './lib/auth';
 import Home from './routes/home';
+import LandingPage from './routes/LandingPage';
+import Features from './routes/public/Features';
+import Pricing from './routes/public/Pricing';
+import Templates from './routes/public/Templates';
+import ResumeExamples from './routes/public/ResumeExamples';
+import Blog from './routes/public/Blog';
+import About from './routes/public/About';
 import Auth from './routes/auth';
+import Onboarding from './routes/Onboarding';
 import AuthCallback from './routes/callback';
 import Upload from './routes/upload';
 import Evaluate from './routes/evaluate';
@@ -13,10 +21,16 @@ import AdminDashboard from './routes/admin/dashboard';
 import api from './lib/api';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/auth" />;
+  
+  // If authenticated but onboarding not completed, redirect to onboarding
+  // Special case: don't redirect if already on onboarding page
+  if (user && !user.onboarding_completed && window.location.pathname !== '/onboarding' && !user.is_admin) {
+    return <Navigate to="/onboarding" />;
+  }
 
   return <>{children}</>;
 };
@@ -33,7 +47,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/templates" element={<Templates />} />
+        <Route path="/resume-examples" element={<ResumeExamples />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />

@@ -70,7 +70,14 @@ class UserModel(BaseModel):
     name: str
     email: EmailStr
     profile_image: Optional[str] = None
+    password_hash: Optional[str] = None
     bio: Optional[str] = None
+    
+    # Onboarding Data
+    target_role: Optional[str] = None
+    experience_level: Optional[str] = None
+    onboarding_completed: bool = False
+    
     is_admin: bool = False
     social_links: SocialLinks = Field(default_factory=SocialLinks)
     job_preferences: JobPreferences = Field(default_factory=JobPreferences)
@@ -156,3 +163,17 @@ class EvaluationModel(BaseModel):
     accepted_edits: dict = Field(default_factory=dict)
     impact_scores: dict = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserRegister(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class OnboardingData(BaseModel):
+    target_role: str
+    experience_level: str

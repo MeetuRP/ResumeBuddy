@@ -10,44 +10,55 @@ backend/app/**/__pycache__/
 .Python
 *.egg-info/
 *.egg
-dist/
-build/
+backend/dist/
+backend/build/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.local
 
 # ==================== Environment / Secrets ====================
 .env
-.env.example
 .env.local
 .env.production
-*.env
+.env.development
+.env.*
+!.env.example
 
-# ==================== Uploads (user resume files) ====================
+# ==================== Uploads / Temporary Files ====================
 uploads/
 backend/uploads/
+frontend/public/uploads/
+temp_hirelytics/
+tmp/
+*.log
+.cache/
 
 # ==================== Node / Frontend ====================
 frontend/node_modules/
 node_modules/
 frontend/dist/
+frontend/dist-ssr/
 frontend/.vite/
+frontend/.next/
+frontend/.eslintcache
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# ==================== IDE / Editor ====================
+# ==================== IDE / Editor / OS ====================
 .vscode/
+!.vscode/extensions.json
 .idea/
+.history/
 *.swp
 *.swo
+*.suo
 *~
 .DS_Store
 Thumbs.db
-
-# ==================== OS Files ====================
 desktop.ini
 *.lnk
-
-# ==================== Temp / Build ====================
-temp_hirelytics/
-*.log
-.cache/
-tmp/

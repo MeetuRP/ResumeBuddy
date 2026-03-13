@@ -95,6 +95,9 @@ export interface User {
     plan_expiry?: string;
     plan_limits: PlanLimits;
     usage: UserUsage;
+    target_role?: string;
+    experience_level?: string;
+    onboarding_completed: boolean;
 }
 
 export interface EvaluationSummary {

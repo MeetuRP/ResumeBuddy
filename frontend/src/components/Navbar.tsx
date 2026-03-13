@@ -42,9 +42,14 @@ const Navbar = () => {
                         </div>
                     </>
                 ) : (
-                    <Link to="/auth" className="primary-button w-fit">
-                        Login
-                    </Link>
+                    <div className="flex items-center gap-6">
+                        <Link to="/auth" className="text-sm font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors">
+                            Sign In
+                        </Link>
+                        <Link to="/auth?mode=signup" className="primary-button w-fit px-8 py-3">
+                            Try Free
+                        </Link>
+                    </div>
                 )}
             </div>
         </nav>

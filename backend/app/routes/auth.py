@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from ..config import settings
 from ..database import get_db
-from ..models import UserModel
+from ..models import UserModel, UserRegister, UserLogin, OnboardingData, UserProfileUpdate
+from ..middleware import get_current_user
+import bcrypt
 
 router = APIRouter()
 
@@ -31,6 +33,90 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
+
+@router.post("/register")
+async def register(user_data: UserRegister):
+    db = get_db()
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": user_data.email})
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
+        )
+    
+    # Hash password
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(user_data.password.encode('utf-8'), salt).decode('utf-8')
+    
+    new_user = UserModel(
+        google_id="email_auth",  # Flag for non-google users
+        name=user_data.name,
+        email=user_data.email,
+        password_hash=hashed_password,
+        social_links={"linkedin": "", "github": "", "website": ""}, # Initialize defaults
+        job_preferences={"desired_roles": [], "locations": [], "min_salary": 0, "remote_preferred": False}
+    )
+    
+    result = await db.users.insert_one(new_user.model_dump(by_alias=True, exclude={"id"}))
+    user_id = str(result.inserted_id)
+    
+    access_token = create_access_token(data={"sub": user_id, "email": user_data.email})
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/login")
+async def login(login_data: UserLogin):
+    db = get_db()
+    
+    user = await db.users.find_one({"email": login_data.email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    
+    if not user.get("password_hash"):
+         raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account uses Google Login. Please sign in with Google."
+        )
+    
+    # Verify password
+    if not bcrypt.checkpw(login_data.password.encode('utf-8'), user["password_hash"].encode('utf-8')):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    
+    access_token = create_access_token(data={"sub": str(user["_id"]), "email": user["email"]})
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/onboarding")
+async def complete_onboarding(
+    data: OnboardingData,
+    current_user: UserModel = Depends(get_current_user)
+):
+    db = get_db()
+    
+    await db.users.update_one(
+        {"_id": current_user.id},
+        {
+            "$set": {
+                "target_role": data.target_role,
+                "experience_level": data.experience_level,
+                "onboarding_completed": True
+            }
+        }
+    )
+    
+    # Log event
+    from ..services.events import log_event
+    await log_event("onboarding_completed", user_id=str(current_user.id), metadata=data.model_dump())
+    
+    return {"status": "success"}
 
 @router.get("/google")
 async def google_login(request: Request):
@@ -71,8 +157,7 @@ async def google_callback(request: Request):
     redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
     return RedirectResponse(url=redirect_url)
 
-from ..models import UserModel, UserProfileUpdate
-from ..middleware import get_current_user
+
 
 def normalize_user(user_data):
     """Convert MongoDB _id to id for frontend compatibility."""
